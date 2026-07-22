@@ -1,0 +1,41 @@
+# --- Core Deep Learning & Machine Learning ---
+torch>=2.2.0
+accelerate>=0.27.0
+bitsandbytes>=0.42.0
+transformers>=4.38.0
+peft>=0.8.0
+datasets>=2.17.0
+scikit-learn>=1.4.0
+numpy<2.0.0
+pandas>=2.2.0
+
+# --- Vector Database & Embeddings ---
+qdrant-client>=1.7.0
+sentence-transformers>=2.4.0
+langchain>=0.1.0
+langchain-community>=0.0.20
+
+# --- MLOps & Experiment Tracking ---
+mlflow>=2.10.0
+
+# --- Evaluation Framework ---
+ragas>=0.1.0
+
+# --- API Backend & Web Framework ---
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.6.0
+python-multipart>=0.0.9
+
+# --- Frontend User Interface ---
+streamlit>=1.31.0
+
+# --- Data Processing & Document Extraction ---
+pypdf>=4.0.0
+pdfplumber>=0.10.0
+beautifulsoup4>=4.12.0
+
+# --- Utilities & Environment ---
+python-dotenv>=1.0.0
+requests>=2.31.0
+tqdm>=4.66.0

@@ -1,0 +1,32 @@
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment Variables & Secrets (API Keys, DB Credentials)
+.env
+*.env
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# MLOps & Experiment Tracking
+mlruns/
+.mlflow/
+
+# Local Vector DB & Dataset Caches
+qdrant_storage/
+data/raw/
+*.bin
+*.safetensors
+*.pt
+*.pth
+
+# IDE & OS Files
+.vscode/
+.idea/
+.DS_Store
