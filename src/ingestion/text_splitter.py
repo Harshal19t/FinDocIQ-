@@ -1,6 +1,6 @@
 import json
 from typing import List, Dict, Any
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 class FinancialTextSplitter:
     """Splits long SEC filings into overlapping chunks while preserving financial metrics."""

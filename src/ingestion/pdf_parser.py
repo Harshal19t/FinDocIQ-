@@ -47,26 +47,32 @@ class FinancialDataIngestor:
 
     def load_hf_financial_dataset(self, num_samples: int = 500) -> str:
         """Downloads financial QA data from Hugging Face for model fine-tuning."""
-        print("Downloading financial QA dataset from Hugging Face...")
+        print("Downloading financial dataset from Hugging Face...")
         
-        # Loading financial instruction dataset
-        dataset = load_dataset("financial_phrasebank", "sentences_allagree", split="train")
+        # Modern, script-less Parquet dataset repository
+        dataset = load_dataset("FinanceMTEB/financial_phrasebank", split="train")
         
         processed_data = []
         for idx, item in enumerate(dataset):
             if idx >= num_samples:
                 break
                 
+            # Extract sentence and label safely
+            sentence = item.get("sentence") or item.get("text", "")
+            label = item.get("label", "neutral")
+            
             formatted_item = {
                 "id": f"fin_qa_{idx}",
-                "context": item.get("sentence", ""),
-                "label": item.get("label", 0),
+                "context": sentence,
+                "label": label,
                 "instruction": "Analyze the financial statement and determine the market sentiment.",
-                "response": f"The financial sentiment for this statement is categorized as: {item.get('label')}"
+                "response": f"The financial sentiment for this statement is categorized as: {label}"
             }
             processed_data.append(formatted_item)
 
+        os.makedirs(self.processed_dir, exist_ok=True)
         output_path = os.path.join(self.processed_dir, "financial_qa_train.jsonl")
+        
         with open(output_path, "w", encoding="utf-8") as f:
             for entry in processed_data:
                 f.write(json.dumps(entry) + "\n")

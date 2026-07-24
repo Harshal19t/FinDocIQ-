@@ -1,5 +1,6 @@
 # --- Core Deep Learning & Machine Learning ---
 torch>=2.2.0
+trl
 accelerate>=0.27.0
 bitsandbytes>=0.42.0
 transformers>=4.38.0
@@ -11,7 +12,6 @@ pandas>=2.2.0
 
 # --- Vector Database & Embeddings ---
 qdrant-client>=1.7.0
-langchain-text-splitters
 sentence-transformers>=2.4.0
 langchain>=0.1.0
 langchain-community>=0.0.20
