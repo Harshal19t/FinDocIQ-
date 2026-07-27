@@ -88,8 +88,18 @@ class FinancialRAGPipeline:
         }
 
     def close(self):
-        """Cleanly close database connections."""
-        self.vector_store.close()
+        """Explicitly closes vector store connections and cleans up resources."""
+        if hasattr(self, "vector_store") and hasattr(self.vector_store, "client"):
+            try:
+                self.vector_store.client.close()
+            except Exception:
+                pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
 
 if __name__ == "__main__":

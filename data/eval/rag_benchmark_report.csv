@@ -1,0 +1,5 @@
+Test ID,Question,Generated Answer,Expected Metric,Top Chunk,Similarity Score,Match Status
+TC01_NUMERIC,What was the total revenue growth in FY2024?,$4.2 billion,$4.2 billion or 12%,Page 1 (p1_c0),0.7768,PASSED
+TC02_QUALITATIVE,Why did operating expenses increase?,Research and development investments in AI infrastructure,Research and development investments in AI infrastructure,Page 1 (p1_c1),0.6515,PASSED
+TC03_MULTIPAGE,How much liquidity does the company hold in cash?,$3.5 billion,$3.5 billion,Page 2 (p2_c0),0.7795,PASSED
+TC04_GUARDRAIL,What were the total stock buybacks in 2025?,The given text does not provide any information about total stock buybacks for 2025.,Insufficient information provided.,Page 2 (p2_c0),0.5595,PASSED
