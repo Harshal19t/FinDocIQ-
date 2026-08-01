@@ -5,6 +5,7 @@ from typing import List, Dict, Any
 from datasets import load_dataset
 import pdfplumber
 
+
 class FinancialDataIngestor:
     """Handles parsing financial PDFs and Hugging Face financial datasets."""
     
@@ -16,10 +17,8 @@ class FinancialDataIngestor:
 
     def clean_financial_text(self, text: str) -> str:
         """Cleans headers, footers, and redundant whitespaces from financial reports."""
-        # Remove multiple newlines and tab spaces
         text = re.sub(r'\n+', '\n', text)
         text = re.sub(r'[ \t]+', ' ', text)
-        # Remove common boilerplate SEC page numbers and disclaimers
         text = re.sub(r'Page \d+ of \d+', '', text, flags=re.IGNORECASE)
         return text.strip()
 
@@ -31,8 +30,6 @@ class FinancialDataIngestor:
             for page_num, page in enumerate(pdf.pages, start=1):
                 text = page.extract_text() or ""
                 cleaned_text = self.clean_financial_text(text)
-                
-                # Extract tables if present
                 tables = page.extract_tables()
                 
                 extracted_pages.append({
@@ -48,8 +45,6 @@ class FinancialDataIngestor:
     def load_hf_financial_dataset(self, num_samples: int = 500) -> str:
         """Downloads financial QA data from Hugging Face for model fine-tuning."""
         print("Downloading financial dataset from Hugging Face...")
-        
-        # Modern, script-less Parquet dataset repository
         dataset = load_dataset("FinanceMTEB/financial_phrasebank", split="train")
         
         processed_data = []
@@ -57,7 +52,6 @@ class FinancialDataIngestor:
             if idx >= num_samples:
                 break
                 
-            # Extract sentence and label safely
             sentence = item.get("sentence") or item.get("text", "")
             label = item.get("label", "neutral")
             
@@ -79,3 +73,29 @@ class FinancialDataIngestor:
                 
         print(f"Saved {len(processed_data)} preprocessed samples to {output_path}")
         return output_path
+
+
+# --- EXECUTION ENTRYPOINT ---
+if __name__ == "__main__":
+    ingestor = FinancialDataIngestor()
+
+    # Look for PDF files inside data/raw
+    pdf_dir = ingestor.raw_data_dir
+    pdf_files = [f for f in os.listdir(pdf_dir) if f.endswith(".pdf")]
+
+    if not pdf_files:
+        print(f"No PDF files found in '{pdf_dir}'. Please place your 2026 10-Q PDF in '{pdf_dir}'.")
+    else:
+        for pdf_file in pdf_files:
+            full_path = os.path.join(pdf_dir, pdf_file)
+            print(f"Processing PDF: {full_path}")
+            parsed_data = ingestor.parse_pdf_report(full_path)
+            
+            # Save parsed JSON to data/processed
+            output_filename = f"{os.path.splitext(pdf_file)[0]}_parsed.json"
+            output_path = os.path.join(ingestor.processed_dir, output_filename)
+            
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(parsed_data, f, indent=2)
+            print(f"Saved parsed output to {output_path}")
+            

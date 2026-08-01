@@ -1,5 +1,6 @@
 import os
 import torch
+from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 from src.retrieval.vector_store import FinancialVectorStore
@@ -17,22 +18,32 @@ class FinancialRAGPipeline:
         print("Initializing Vector Store connection...")
         self.vector_store = FinancialVectorStore(collection_name=collection_name)
 
-        print("Loading fine-tuned LLM and tokenizer...")
-        self.tokenizer = AutoTokenizer.from_pretrained(adapter_path)
-        
-        base_model = AutoModelForCausalLM.from_pretrained(
-            base_model_id,
-            device_map="cpu"
-        )
-        self.model = PeftModel.from_pretrained(base_model, adapter_path)
+        adapter_dir = Path(adapter_path)
+        has_adapter = adapter_dir.exists() and any(adapter_dir.iterdir())
+
+        if has_adapter:
+            print(f"Loading tokenizer and fine-tuned LoRA adapter from: {adapter_path}")
+            self.tokenizer = AutoTokenizer.from_pretrained(adapter_path, trust_remote_code=True)
+            base_model = AutoModelForCausalLM.from_pretrained(
+                base_model_id,
+                device_map="cpu",
+                trust_remote_code=True
+            )
+            self.model = PeftModel.from_pretrained(base_model, adapter_path)
+        else:
+            print(f"Adapter path '{adapter_path}' not found or empty. Falling back to base model: {base_model_id}")
+            self.tokenizer = AutoTokenizer.from_pretrained(base_model_id, trust_remote_code=True)
+            self.model = AutoModelForCausalLM.from_pretrained(
+                base_model_id,
+                device_map="cpu",
+                trust_remote_code=True
+            )
+
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
         self.model.eval()
-        
-    def format_rag_prompt(self, query: str, context_chunks: list) -> str:
-        """Constructs a context-grounded instruction prompt."""
-        formatted_context = "\n---\n".join(
-            [f"[Page {chunk['page']}]: {chunk['content']}" for chunk in context_chunks]
-        )
-        
+
     def format_rag_prompt(self, query: str, context_chunks: list) -> str:
         """Constructs a context-grounded instruction prompt."""
         formatted_context = "\n---\n".join(
@@ -48,7 +59,7 @@ class FinancialRAGPipeline:
             f"<|im_start|>assistant\n"
         )
         return prompt
-    
+
     def query(self, user_query: str, top_k: int = 2) -> dict:
         """Executes the full RAG workflow: Retrieve -> Augment -> Generate."""
         print(f"\nSearching vector store for top {top_k} relevant chunks...")
@@ -103,17 +114,14 @@ class FinancialRAGPipeline:
 
 
 if __name__ == "__main__":
-    rag_chain = FinancialRAGPipeline()
+    with FinancialRAGPipeline() as rag_chain:
+        test_query = "What was the total revenue growth in FY2024?"
+        result = rag_chain.query(test_query)
 
-    test_query = "What was the total revenue growth in FY2024?"
-    result = rag_chain.query(test_query)
-
-    print("\n" + "=" * 60)
-    print("QUERY:", result["query"])
-    print("-" * 60)
-    print("ANSWER:", result["answer"])
-    print("-" * 60)
-    print("SOURCES USED:", result["sources"])
-    print("=" * 60)
-
-    rag_chain.close()
+        print("\n" + "=" * 60)
+        print("QUERY:", result["query"])
+        print("-" * 60)
+        print("ANSWER:", result["answer"])
+        print("-" * 60)
+        print("SOURCES USED:", result["sources"])
+        print("=" * 60)

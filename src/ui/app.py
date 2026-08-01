@@ -23,36 +23,52 @@ def main():
     st.title("Financial Statement RAG Assistant")
     st.caption("Powered by Qwen2.5-1.5B (LoRA Fine-Tuned) & Qdrant Vector Store")
 
-    # Sidebar settings
+    # --- SIDEBAR LAYOUT ---
     with st.sidebar:
-        st.header("Pipeline Configuration")
-        top_k = st.slider("Top-K Retrieved Chunks", min_value=1, max_value=5, value=2)
-        
-        st.markdown("---")
-        st.markdown("**Architecture Overview:**")
-        st.markdown("- **Embedding Model:** BAAI/bge-small-en-v1.5")
-        st.markdown("- **Vector DB:** Qdrant Local Persistent Store")
-        st.markdown("- **LLM Adapter:** Fine-Tuned LoRA (4-bit Compatible)")
+        st.title("⚙️ Control Panel")
+        st.caption("Financial RAG Assistant Configuration")
+        st.divider()
 
-        # Sidebar settings
-    with st.sidebar:
-        st.header("Pipeline Configuration")
-        top_k = st.slider("Top-K Retrieved Chunks", min_value=1, max_value=5, value=2)
-        
-        st.markdown("---")
-        if st.button("Reload Pipeline Memory"):
-            st.cache_resource.clear()
-            st.session_state.messages = []
-            st.rerun()
+        # Pipeline Settings
+        st.subheader("Pipeline Configuration")
+        top_k = st.slider(
+            "Top-K Retrieved Chunks",
+            min_value=1,
+            max_value=5,
+            value=2,
+            help="Number of document context chunks retrieved per query.",
+            key="sidebar_top_k_slider"
+        )
 
-        if st.button("Clear Chat History"):
-            st.session_state.messages = []
-            st.rerun()
-            
-        if st.button("Clear Chat History"):
-            st.session_state.messages = []
-            st.rerun()
+        st.divider()
 
+        # Architecture Overview
+        st.subheader("Architecture Overview")
+        st.markdown(
+            """
+            - **Embedding Model:** `BAAI/bge-small-en-v1.5`
+            - **Vector DB:** Qdrant Local Store
+            - **LLM Adapter:** Fine-Tuned Qwen2.5 (LoRA)
+            """
+        )
+
+        st.divider()
+
+        # Actions & Controls
+        st.subheader("System Actions")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if st.button("Reload Pipeline", key="btn_reload_pipeline", use_container_width=True):
+                st.cache_resource.clear()
+                st.rerun()
+
+        with col2:
+            if st.button("Clear Chat", key="btn_clear_chat", use_container_width=True):
+                st.session_state.messages = []
+                st.rerun()
+
+    # --- MAIN CHAT UI ---
     # Initialize chat session history
     if "messages" not in st.session_state:
         st.session_state.messages = []
