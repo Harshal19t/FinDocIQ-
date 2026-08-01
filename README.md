@@ -1,341 +1,233 @@
-<canvas identifier="findociq-readme" type="text/markdown" title="FinDocIQ README.md" content="# FinDocIQ: Retrieval-Augmented Generation for Financial Reports
-FinDocIQ Architecture
-End-to-end RAG assistant for ingesting SEC 10-Q reports and delivering accurate, context-grounded financial answers.
+# FinDocIQ: Financial Statement RAG Assistant
 
-📌 About the Project
-FinDocIQ is a Retrieval-Augmented Generation (RAG) assistant designed to extract insights from complex SEC 10-Q financial reports. It addresses two major challenges in applying LLMs to financial documents:
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.2%2B-ee4c2c.svg)](https://pytorch.org/)
+[![Qdrant](https://img.shields.io/badge/Vector%20DB-Qdrant-00d2ff.svg)](https://qdrant.tech/)
+[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ed.svg)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Hallucinations & Missing Context: Out-of-the-box LLMs lack access to real-time financial filings.
-Table Structural Breakdown: Raw text extractors distort structured financial data.
-FinDocIQ combines advanced document parsing, vector search, and fine-tuned local LLMs to deliver accurate, verifiable answers with source attribution.
+**FinDocIQ** is an end-to-end Retrieval-Augmented Generation (RAG) assistant engineered to ingest, parse, and query complex SEC 10-Q financial filings. Built to eliminate financial hallucinations and structural data breakdown, FinDocIQ preserves narrative context and financial table structures to deliver factually grounded answers with clear source attribution.
 
-🏗️ Architecture Overview
-mermaid
-Copy
+---
 
+## Key Features
 
+* **Advanced PDF & Table Extraction:** Uses `pdfplumber` to cleanly parse narrative disclosures and multi-column financial tables without breaking tabular integrity.
+* **Local Vector Search:** Embeds text chunks using `BAAI/bge-small-en-v1.5` and indexes them into a local **Qdrant Vector Database** for high-density similarity search.
+* **Fine-Tuned Local Inference:** Leverages **Qwen2.5-1.5B** fine-tuned via PEFT/LoRA for targeted, context-grounded financial Q&A.
+* **Interactive Streamlit UI:** Features dynamic Top-K chunk retrieval tuning, real-time citation/source text inspection, and one-click pipeline cache clearing.
+* **Production Containerization:** Optimized CPU-only PyTorch setup packaged with **Docker Compose** and BuildKit layer caching for efficient local or cloud deployment.
 
-Mermaid Error
-Error: Lexical error on line 8. Unrecognized text.
-...EC 10-Q PDF Filing\"]:::doc --> B[\"pdfp
------------------------^
+---
 
+## System Architecture
 
-✨ Key Features
-✅ Advanced Document Parsing: Uses pdfplumber to extract narrative text and financial tables while preserving semantic context.
-✅ High-Density Vector Search: Leverages Qdrant and BAAI/bge-small-en-v1.5 for fast similarity queries and dynamic Top-K chunk retrieval.
-✅ Fine-Tuned Local LLM: Qwen2.5-1.5B + LoRA for accurate, grounded responses without excessive GPU usage.
-✅ Interactive UI: Streamlit app with dynamic Top-K tuning, source citation inspection, and pipeline cache management.
-✅ Containerized Deployment: Docker Compose for seamless setup with PyTorch, Qdrant, and Streamlit.
+```mermaid
+graph TD
+    classDef doc fill:#1e293b,stroke:#475569,color:#f8fafc;
+    classDef process fill:#0f172a,stroke:#3b82f6,color:#f8fafc;
+    classDef model fill:#1e1b4b,stroke:#6366f1,color:#f8fafc;
+    classDef db fill:#064e3b,stroke:#10b981,color:#f8fafc;
+    classDef ui fill:#4c1d95,stroke:#8b5cf6,color:#f8fafc;
 
-🛠️ Technical Stack
+    subgraph INGESTION["1. Document Processing & Ingestion"]
+        A["📄 SEC 10-Q PDF Filing"]:::doc --> B["pdfplumber Parser"]:::process
+        B -->|Narrative & Tables| C["Semantic Text Chunker"]:::process
+        C --> D["BAAI/bge-small-en-v1.5"]:::model
+        D -->|384-dim Vectors| E[("Qdrant Local Vector Store")]:::db
+    end
 
-  
-    
-      Component
-      Technology
-    
-  
-  
-    
-      Document Parsing
-      pdfplumber
-    
-    
-      Embedding Model
-      BAAI/bge-small-en-v1.5
-    
-    
-      Vector Store
-      Qdrant
-    
-    
-      LLM
-      Qwen2.5-1.5B + LoRA
-    
-    
-      UI Framework
-      Streamlit
-    
-    
-      Containerization
-      Docker Compose + BuildKit
-    
-    
-      Language
-      Python 3.10+
-    
-  
+    subgraph RAG["2. Retrieval & Generation Pipeline"]
+        F["👤 User Query"]:::ui --> G["Streamlit App UI"]:::ui
+        G -->|Vector Query| E
+        E -->|Top-K Context Chunks| H["Context Assembly"]:::process
+        G -->|Prompt| H
+        H --> I["Fine-Tuned Qwen2.5-1.5B (LoRA)"]:::model
+        I -->|Grounded Answer + Sources| G
+    end
 
+    subgraph DEPLOYMENT["3. Container Infrastructure"]
+        J["🐳 Docker Compose"]:::process
+        J --- G
+        J --- E
+    end
+```
 
+---
 
+## Tech Stack
 
+| Domain | Technologies Used |
+| :--- | :--- |
+| **Language & Core** | Python 3.10, PyTorch (CPU-Optimized) |
+| **LLM & Fine-Tuning** | Qwen2.5-1.5B, Hugging Face Transformers, PEFT (LoRA) |
+| **Embeddings & Vector Store** | `BAAI/bge-small-en-v1.5`, Qdrant Vector Store |
+| **Document Processing** | `pdfplumber`, Pandas, NumPy |
+| **Frontend UI** | Streamlit |
+| **DevOps & Containerization** | Docker, Docker Compose, BuildKit Cache Mounts |
 
-🚀 Getting Started
-Prerequisites
+---
 
-Docker (Install Docker)
-Docker Compose (included with Docker Desktop)
-Python 3.10+ (for local development)
-Installation
+## Project Structure
 
+```text
+FinDocIQ/
+├── data/                    # Storage for raw PDF filings and Qdrant local database snapshots
+├── src/
+│   ├── ingestion.py         # Advanced PDF parsing (pdfplumber) and semantic chunking logic
+│   ├── vector_store.py      # Qdrant vector database initialization, indexing, and search
+│   └── rag_engine.py        # Context retrieval assembly and fine-tuned Qwen model inference
+├── app.py                   # Interactive Streamlit frontend web application
+├── Dockerfile               # Multi-stage layer-cached Docker build file (CPU-only PyTorch)
+├── docker-compose.yml       # Container orchestration (Streamlit application + Qdrant service)
+├── .env.example             # Template for environment variables
+├── requirements.txt         # Dependency manifest with PyTorch CPU index URL
+└── README.md
+```
 
-Clone the repository:
-bash
-Copy
+---
 
-git clone https://github.com/your-username/FinDocIQ.git
-cd FinDocIQ
+## Configuration & Environment Setup
 
+Copy `.env.example` to create your local `.env` configuration file:
 
+```bash
+cp .env.example .env
+```
 
+Default configuration settings:
 
-
-Set up environment variables:
-Create a .env file in the root directory and add:
-env
-Copy
-
+```env
+# Vector Database Settings
 QDRANT_HOST=localhost
 QDRANT_PORT=6333
+COLLECTION_NAME=financial_docs
 
+# Embedding & LLM Models
+EMBEDDING_MODEL_NAME=BAAI/bge-small-en-v1.5
+LLM_MODEL_NAME=Qwen/Qwen2.5-1.5B-Instruct
+LORA_WEIGHTS_PATH=./models/qwen-lora-financial
 
+# Application Settings
+CHUNK_SIZE=500
+CHUNK_OVERLAP=50
+DEFAULT_TOP_K=3
+```
 
+---
 
+## Technical Deep Dive
 
-Build and run with Docker:
-bash
-Copy
+### 1. Structure-Preserving Document Ingestion
+Financial disclosures interweave dense narrative paragraphs with financial tables. Standard text extractors destroy table relationships by reading across columns. FinDocIQ utilizes `pdfplumber` to explicitly detect bounding boxes around tabular data, converting balance sheets and income statements into Markdown tables before splitting text into semantic chunks.
 
-docker-compose up --build
+### 2. High-Density Vector Indexing
+* **Embedding Model:** `BAAI/bge-small-en-v1.5` mapping text chunks into a 384-dimensional vector space.
+* **Similarity Metric:** Cosine Similarity indexed inside a local **Qdrant** instance.
+* **Payload Metadata:** Each vector stores chunk text, original page number, table flags, and file source metadata for instant citation tracking.
 
+### 3. Fact-Grounded LLM Generation
+* **Model Base:** `Qwen2.5-1.5B-Instruct` lightweight open-weights LLM optimized for CPU inference.
+* **Fine-Tuning Method:** Low-Rank Adaptation (**LoRA** via `peft`) trained to restrict answers strictly to provided context windows and formulate structured responses.
 
+---
 
+## Quick Start Guide
 
-This will:
+### Option A: Running with Docker Compose (Recommended)
 
-Start the Qdrant vector store.
-Launch the Streamlit UI (accessible at http://localhost:8501).
-Load the fine-tuned Qwen2.5-1.5B model.
+Ensure [Docker](https://www.docker.com/get-started/) and [Docker Compose](https://docs.docker.com/compose/) are installed.
 
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/Harshal19t/FinDocIQ-.git](https://github.com/Harshal19t/FinDocIQ-.git)
+   cd FinDocIQ-
+   ```
 
+2. **Launch with Docker BuildKit caching enabled:**
+   * **Linux / macOS:**
+     ```bash
+     DOCKER_BUILDKIT=1 docker compose up --build
+     ```
+   * **Windows (PowerShell):**
+     ```powershell
+     $env:DOCKER_BUILDKIT=1; docker compose up --build
+     ```
 
-Access the app:
-Open your browser and navigate to:
-🔗 http://localhost:8501
+3. **Access the Application:**
+   Open your browser at `http://localhost:8501`.
 
+---
 
-📂 Project Structure
-text
-Copy
+### Option B: Local Python Virtual Environment
 
-FinDocIQ/
-├── docker-compose.yml          # Docker Compose configuration
-├── Dockerfile                  # Dockerfile for the Streamlit app
-├── app/                        # Streamlit application
-│   ├── main.py                 # Main Streamlit app
-│   ├── config.py               # Configuration settings
-│   ├── pipelines/              # RAG and document processing pipelines
-│   │   ├── ingestion.py        # Document ingestion logic
-│   │   ├── retrieval.py        # Vector search and retrieval
-│   │   └── generation.py       # LLM response generation
-│   └── utils/                  # Utility functions
-│       ├── qdrant_client.py    # Qdrant client wrapper
-│       └── model_loader.py      # LLM loading and fine-tuning
-├── data/                       # Sample SEC 10-Q filings
-├── models/                     # Fine-tuned model weights (if applicable)
-├── .env.example                # Example environment variables
-└── README.md                   # Project documentation
+If running outside Docker:
 
+1. **Create and activate virtual environment:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+   ```
 
+2. **Install CPU-only PyTorch and dependencies:**
+   ```bash
+   pip install --extra-index-url [https://download.pytorch.org/whl/cpu](https://download.pytorch.org/whl/cpu) -r requirements.txt
+   ```
 
+3. **Run local Qdrant container:**
+   ```bash
+   docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
+   ```
 
-🔧 Configuration
-Environment Variables
+4. **Start Streamlit App:**
+   ```bash
+   streamlit run app.py
+   ```
 
-  
-    
-      Variable
-      Description
-      Default Value
-    
-  
-  
-    
-      QDRANT_HOST
-      Host for Qdrant vector store
-      localhost
-    
-    
-      QDRANT_PORT
-      Port for Qdrant vector store
-      6333
-    
-    
-      TOP_K
-      Number of chunks to retrieve
-      5
-    
-    
-      MODEL_PATH
-      Path to fine-tuned Qwen2.5-1.5B model
-      ./models/
-    
-  
+---
 
+## Testing & Verification
 
+Run this command inside the running container to verify CPU-only PyTorch installation and ensure CUDA overhead is completely stripped:
 
+```bash
+docker compose exec app python -c "import torch; print('PyTorch Version:', torch.__version__); print('CUDA Available:', torch.cuda.is_available())"
+```
 
-Customizing the Pipeline
+**Expected Output:**
+```text
+PyTorch Version: 2.2.0+cpu
+CUDA Available: False
+```
 
-Top-K Retrieval: Adjust the TOP_K variable in config.py to control the number of context chunks passed to the LLM.
-Embedding Model: Replace BAAI/bge-small-en-v1.5 in pipelines/ingestion.py with another embedding model (e.g., sentence-transformers/all-mpnet-base-v2).
-LLM: Swap Qwen2.5-1.5B with another model in utils/model_loader.py.
+---
 
-📈 Usage
+## Usage Walkthrough
 
+1. **Upload Filing:** Drag and drop an SEC 10-Q report (PDF) using the sidebar file loader.
+2. **Ingest & Vectorize:** Click **Process Document** to execute `pdfplumber` parsing, chunking, embedding generation, and Qdrant database population.
+3. **Query Financials:** Enter questions such as *"What were total operating expenses for the quarter?"* or *"Summarize legal proceedings disclosed in the report."*
+4. **Audit Citations:** Open the **Retrieved Context** drawer below any response to inspect the exact text chunks and page references used by the LLM.
 
-Upload a SEC 10-Q PDF:
+---
 
-Use the file uploader in the Streamlit UI to upload a PDF.
-The system will automatically parse and chunk the document.
+## Future Roadmap
 
+- [ ] **Hybrid Search Integration:** Combine dense vector search with sparse BM25 keyword matching for exact numerical code lookups.
+- [ ] **RAGAS Evaluation Framework:** Automated scoring for faithfulness, answer relevance, and context recall.
+- [ ] **FastAPI Backend Layer:** Expose RESTful endpoints for integration into external microservices.
 
-Ask a Question:
+---
 
-Enter your query in the chat interface (e.g., "What was the company's revenue in Q2 2024?").
-FinDocIQ will:
+## Author
 
-Retrieve the most relevant chunks from the vector store.
-Generate a grounded response with source citations.
+**Harshal Trivedi**
+* **Education:** MSc Advanced Computer Science, University of Sheffield
+* **GitHub:** [@Harshal19t](https://github.com/Harshal19t)
+* **LinkedIn:** [Harshal Trivedi](https://linkedin.com/in/harshal-trivedi-702145208)
 
+---
 
+## License
 
-Inspect Sources:
-
-Click on source citations to view the raw text chunks used for the response.
-
-
-Adjust Top-K:
-
-Use the slider to change the number of retrieved chunks (TOP_K) in real-time.
-
-
-🔍 Key Technical Components
-1. Document Processing & Ingestion
-
-pdfplumber: Extracts text and tables from PDFs while preserving structure.
-Semantic Chunking: Splits documents into meaningful chunks (e.g., paragraphs, table rows) for embedding.
-2. Vector Search
-
-BAAI/bge-small-en-v1.5: Generates 384-dimensional embeddings for each chunk.
-Qdrant: Indexes embeddings for low-latency similarity search.
-3. Retrieval-Augmented Generation (RAG)
-
-Context Assembly: Combines the user query and top-K chunks into a prompt for the LLM.
-Fine-Tuned Qwen2.5-1.5B: Generates grounded responses using LoRA for parameter-efficient fine-tuning.
-4. Containerization
-
-Docker Compose: Orchestrates the Streamlit app, Qdrant, and PyTorch services.
-BuildKit Caching: Speeds up Docker builds by caching pip dependencies.
-
-📊 Performance
-
-  
-    
-      Metric
-      Value
-    
-  
-  
-    
-      Embedding Time
-      ~0.5s per chunk
-    
-    
-      Vector Search
-      ~10ms per query (Top-K=5)
-    
-    
-      LLM Inference
-      ~2s per response
-    
-    
-      Docker Build
-      ~5min (first run)
-    
-  
-
-
-
-
-
-🛠️ Development
-Local Setup (Without Docker)
-
-
-Install dependencies:
-bash
-Copy
-
-pip install -r requirements.txt
-
-
-
-
-
-Start Qdrant locally:
-bash
-Copy
-
-docker run -p 6333:6333 qdrant/qdrant
-
-
-
-
-
-Run the Streamlit app:
-bash
-Copy
-
-streamlit run app/main.py
-
-
-
-
-Adding New Features
-
-Hybrid Search: Integrate BM25 for sparse keyword matching alongside dense embeddings.
-Evaluation: Use RAGAS to automate metrics like faithfulness and answer relevancy.
-API: Expose the pipeline via FastAPI for programmatic access.
-
-🤝 Contributing
-Contributions are welcome! Here’s how you can help:
-
-Fork the repository and create a new branch.
-Submit a Pull Request with your changes.
-Report bugs or suggest features by opening an Issue.
-Contribution Guidelines
-
-Follow PEP 8 for Python code.
-Add tests for new features.
-Update the documentation (including this README.md).
-
-📜 License
-This project is licensed under the MIT License – see the LICENSE file for details.
-
-🙏 Acknowledgments
-
-Qdrant: https://qdrant.tech/
-BAAI/bge-small-en-v1.5: https://huggingface.co/BAAI/bge-small-en-v1.5
-Qwen2.5-1.5B: https://huggingface.co/Qwen/Qwen2.5-1.5B
-Streamlit: https://streamlit.io/
-
-📧 Contact
-For questions or feedback, reach out to:
-
-Harshal Trivedi (@harshal19t)
-Daemian (@daemain19)
-
-⭐ Star this repo if you find it useful!
-</canvas>
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
